@@ -9,7 +9,7 @@
 * @license General Public License
 * @copyright Cormac McGarrigle 2015
 *
-* Github: https://gist.github.com/CormacMcG/1621f543d54af1df3f7e
+* Github: https://github.com/CormacMcG/Sudoku
 *
 */
 
@@ -27,146 +27,146 @@ const int COLUMNLENGTH = 9;
 class PuzzleGenerator
 {
 	// Set class to public as this will need to be used in other classes.
-	public:
+public:
 
-		// Generate constructor to generate random values to be input into
-		// the grid.
-		PuzzleGenerator()
+	// Generate constructor to generate random values to be input into
+	// the grid.
+	PuzzleGenerator()
+	{
+		// Seed random value with time to ensure that it changes every 
+		// time the program is run, otherwise the same numbers will appear each time.
+		int seed = time(NULL);
+		srand(seed);
+	}
+
+	// Inline GetRandomNumber function declaration (inside the PuzzleGenerator class).
+	// This will generate the random number, between 1-9, for input into the grid.
+	int GetRandomNumber()
+	{
+		return rand() % 9 + 1;
+	}
+
+	// This function will populate the grid with the previously generated random numbers.
+	// It will be populated starting at cell (0,0), populating the entire first row before 
+	// moving onto the second column.
+	void FillGrid(int grid[ROWLENGTH][COLUMNLENGTH])
+	{
+		// Call function from above to add the previously generated random numbers to the grid.
+		for (int i = 0; i < ROWLENGTH; i++)
 		{
-			// Seed random value with time to ensure that it changes every 
-			// time the program is run, otherwise the same numbers will appear each time.
-			int seed = time(NULL);
-			srand(seed);
-		}
-		
-		// Inline GetRandomNumber function declaration (inside the PuzzleGenerator class).
-		// This will generate the random number, between 1-9, for input into the grid.
-		int GetRandomNumber()
-		{		
-			return rand() % 9 + 1;
-		}
-			
-		// This function will populate the grid with the previously generated random numbers.
-		// It will be populated starting at cell (0,0), populating the entire first row before 
-		// moving onto the second column.
-		void FillGrid(int grid[ROWLENGTH][COLUMNLENGTH])
-		{
-			// Call function from above to add the previously generated random numbers to the grid.
-			for (int i = 0; i < ROWLENGTH; i++)
+			for (int j = 0; j < COLUMNLENGTH; j++)
 			{
-				for (int j = 0; j < COLUMNLENGTH; j++)
+				// Generate a new random number.
+				int randomNumber = GetRandomNumber();
+				bool isUnique = CheckNumValid(randomNumber, i, j, grid);
+
+				// If the newly random generated number already appears in the row/column/3*3
+				// grid, ie is not unique, generate a new random number and test if it already appears.
+				while (!isUnique)
 				{
-					// Generate a new random number.
-					int randomNumber = GetRandomNumber();
-					bool isUnique = CheckNumValid(randomNumber, i, j, grid);
-					
-					// If the newly random generated number already appears in the row/column/3*3
-					// grid, ie is not unjique, generate a new random number and test if it already appears.
-					while (!isUnique)
+					// The number already exists in the grid. Try a different one.
+					randomNumber = GetRandomNumber();
+					// Check if the new randomNumner is unique this time.
+					isUnique = CheckNumValid(randomNumber, i, j, grid);
+
+					// Check uniqueness test is functioning by outputting
+					// the uniqueness check operation to the user.				
+					if (!isUnique)
 					{
-						// The number already exists in the grid. Try a different one.
-						randomNumber = GetRandomNumber();
-						// Check if the new randomNumner is unique this time.
-						isUnique = CheckNumValid(randomNumber, i, j, grid);
-
-						// Check uniqueness test is functioning by outputting
-						// the uniqueness check operation to the user.				
-						if (!isUnique)
-						{
-						cout << "Tried number " << randomNumber << " at row " << i << ", column " 
-							 << j << " but it was not unique." << endl;
-						} 
-
-						// Check what is being inserted into each grid position
-						// and display to the user.
-						if (isUnique)
-						{
-							cout << "Inserted " << randomNumber << " at row " << i << ", column "
-								<< j << endl;
-						}
+						cout << "Tried number " << randomNumber << " at row " << i << ", column "
+							<< j << " but it was not unique." << endl;
 					}
 
-					// Now that we know the number is unique, assign it to the grid.
-					grid[i][j] = randomNumber;
+					// Check what is being inserted into each grid position
+					// and display to the user.
+					if (isUnique)
+					{
+						cout << "Inserted " << randomNumber << " at row " << i << ", column "
+							<< j << endl;
+					}
 				}
-			}
-		};
 
-		// Returns whether the given number is unique at the given position based on what 
-		// numbers are already filled in.
-		bool CheckNumValid(int num, int row, int column, int grid[ROWLENGTH][COLUMNLENGTH])
+				// Now that we know the number is unique, assign it to the grid.
+				grid[i][j] = randomNumber;
+			}
+		}
+	};
+
+	// Returns whether the given number is unique at the given position based on what 
+	// numbers are already filled in.
+	bool CheckNumValid(int num, int row, int column, int grid[ROWLENGTH][COLUMNLENGTH])
+	{
+		// Check row is valid first, by setting a boolean.
+		for (int i = 0; i < 9; i++)
 		{
-			// Check row is valid first, by setting a boolean.
-			for (int i = 0; i < 9; i++)
+			// Using this method the number is checked against a number within the grid. 
+			// Once that number checks against itself if will always be true.
+
+			if (i == column)
 			{
-				// Using this method the number is checked against a number within the grid. 
-				// Once that number checks against itself if will always be true.
-
-				if (i == column)
-				{
-					continue;
-				}
-
-				// grid[row][column]	grid[4][7]
-				// grid[row][i]			grid[4][7]
-				// This event previously occured meaning an infinite loop testing a number's
-				// uniqueness against itself.
-
-
-				// Set value for true.
-				bool isCorrect = (grid[row][i] != num);
-
-				if (!isCorrect)
-				{
-					return false;
-				}
+				continue;
 			}
 
-			// Check column is valid.
-			for (int i = 0; i < 9; i++)
-			{
-				bool isCorrect = (grid[i][column] != num);
-				if (!isCorrect)
-				{
-					continue;
-				}
-			}
+			// grid[row][column]	grid[4][7]
+			// grid[row][i]			grid[4][7]
+			// This event previously occured meaning an infinite loop testing a number's
+			// uniqueness against itself.
 
-			return true;
-		
+
+			// Set value for true.
+			bool isCorrect = (grid[row][i] != num);
+
+			if (!isCorrect)
+			{
+				return false;
+			}
+		}
+
+		// Check column is valid.
+		for (int i = 0; i < 9; i++)
+		{
+			bool isCorrect = (grid[i][column] != num);
+			if (!isCorrect)
+			{
+				continue;
+			}
+		}
+
 		// Repeat the validity checks for row, this time performing them on the column.
 		for (int j = 0; j < 9; j++)
-				{
+		{
 
-					if (j == row)
-					{
-						continue;
-					}
+			if (j == row)
+			{
+				continue;
+			}
 
-					// Set value for true.
-					bool isColCorrect = (grid[j][column] != num);
+			// Set value for true.
+			bool isColCorrect = (grid[j][column] != num);
 
-					if (!isColCorrect)
-					{
-						return false;
-					}
+			if (!isColCorrect)
+			{
+				return false;
+			}
 
-				}
-
-				// Check column is valid.
-				for (int j = 0; j < 9; j++)
-				{
-					bool isColCorrect = (grid[row][j] != num);
-					if (!isColCorrect)
-					{
-						continue;
-					}
-				}
-				return true;
 		}
+
+		// Check column is valid.
+		for (int j = 0; j < 9; j++)
+		{
+			bool isColCorrect = (grid[row][j] != num);
+			if (!isColCorrect)
+			{
+				continue;
+			}
+		}
+		return true;
+	}
 };
 
-			// @TODO: Repair above function for columnn check	
+			// @TODO: Fix the following: Currently randomness means that the checks will 
+			// fail as there is no set order. Therefore it will come to a point
+			// in which the only random number left in a row is already in the column.
 			// @TODO: Check the 3*3 box to ensure it contains only 1-9.
 
  
