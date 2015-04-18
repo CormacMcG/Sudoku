@@ -9,6 +9,9 @@
 * @license General Public License
 * @copyright Cormac McGarrigle 2015
 *
+* @TODO: Display a full completed Sudoku grid
+* @TODO: Knock holes within the grid to allow space for inputs.
+* @TODO: Allow user inputs
 * Github: https://github.com/CormacMcG/Sudoku
 *
 */
@@ -17,8 +20,10 @@
 #include <string>
 #include <cstring>
 #include <time.h>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 // Set constant value for grid dimension variables. 
 const int ROWLENGTH = 9;
@@ -51,45 +56,118 @@ public:
 	// moving onto the second column.
 	void FillGrid(int grid[ROWLENGTH][COLUMNLENGTH])
 	{
-		// Call function from above to add the previously generated random numbers to the grid.
-		for (int i = 0; i < ROWLENGTH; i++)
+		// Keep track of the number of times that the board has been regenerated for reference.
+		int attempts = 0;
+		
+		// 
+		high_resolution_clock::time_point startTime = high_resolution_clock::now();
+
+		// Set up while loop to ensure that if the valid checks get stuck in an endless
+		// checking loop with no valid solutions a new board will be generated.
+		bool validBoard = false;
+		while (!validBoard)
 		{
-			for (int j = 0; j < COLUMNLENGTH; j++)
+			validBoard = true;
+			ClearGrid(grid);
+			//cout << "========================= New grid =========================" << endl;
+			// Every time a new grid is required add one to attempts.
+			attempts++;
+
+			// Call function from above to add the previously generated random numbers to the grid.
+			for (int i = 0; i < ROWLENGTH; i++)
 			{
-				// Generate a new random number.
-				int randomNumber = GetRandomNumber();
-				bool isUnique = CheckNumValid(randomNumber, i, j, grid);
+				// Create a checklist of each potential value used (1-9).
+				bool rowChecklist[9] = { false };
 
-				// If the newly random generated number already appears in the row/column/3*3
-				// grid, ie is not unique, generate a new random number and test if it already appears.
-				while (!isUnique)
+				for (int j = 0; j < COLUMNLENGTH; j++)
 				{
-					// The number already exists in the grid. Try a different one.
-					randomNumber = GetRandomNumber();
-					// Check if the new randomNumner is unique this time.
-					isUnique = CheckNumValid(randomNumber, i, j, grid);
+					// Generate a new random number.
+					int randomNumber = GetRandomNumber();
+					bool isUnique = CheckNumValid(randomNumber, i, j, grid);
 
-					// Check uniqueness test is functioning by outputting
-					// the uniqueness check operation to the user.				
-					if (!isUnique)
+					// If the newly random generated number already appears in the row/column/3*3
+					// grid, ie is not unique, generate a new random number and test if it already appears.
+					while (!isUnique)
 					{
-						cout << "Tried number " << randomNumber << " at row " << i << ", column "
-							<< j << " but it was not unique." << endl;
+						// The number already exists in the grid. Try a different one.
+						randomNumber = GetRandomNumber();
+						// If the new random number has been used already, try again.
+						if (rowChecklist[randomNumber - 1])
+							continue;
+
+						// Check if there are any available values which do not occur in the cells above
+						// this one in the column. If not, the board is invalid.
+						int anyNumAvailable = false;
+						for (int value = 1; value <= 9; value++)
+						{
+							if (!rowChecklist[value - 1])
+							{
+								bool numAvailable = true;
+
+								for (int ii = 0; ii <= i; ii++)
+								{
+									if (grid[ii][j] == value)
+									{
+										numAvailable = false;
+										break;
+									}
+								}
+								if (numAvailable)
+									anyNumAvailable = true;
+							}
+						}
+						if (!anyNumAvailable)
+						{
+							validBoard = false;
+							break;
+						}
+
+						if (!validBoard)
+							break;
+						else
+						{
+							// Check if the new randomNumner is unique this time.
+							isUnique = CheckNumValid(randomNumber, i, j, grid);
+
+							// Check uniqueness test is functioning by outputting
+							// the values which fail the uniqueness check operation to the user.				
+							/*if (!isUnique)
+							{
+								cout << "Tried number " << randomNumber << " at row " << i << ", column "
+									<< j << " but it was not unique." << endl;
+								//PrintPuzzle(grid);
+							}
+
+							// Check what is being inserted into each grid position
+							// and display to the user.
+							if (isUnique)
+							{
+								cout << "Inserted " << randomNumber << " at row " << i << ", column "
+									<< j << endl;
+							}*/
+						}
 					}
 
-					// Check what is being inserted into each grid position
-					// and display to the user.
-					if (isUnique)
-					{
-						cout << "Inserted " << randomNumber << " at row " << i << ", column "
-							<< j << endl;
-					}
+					// If the selected board is not valid scrap it and return to the beginning 
+					// of the while loop to generate a new grid of random numbers.
+					if (!validBoard)
+						break;
+					// Now that we know the number is unique, assign it to the grid.
+					grid[i][j] = randomNumber;
+
+					rowChecklist[randomNumber - 1] = true;
 				}
-
-				// Now that we know the number is unique, assign it to the grid.
-				grid[i][j] = randomNumber;
+				if (!validBoard)
+					break;
 			}
 		}
+		
+		// Measures code execution time.
+		// Public domain, from https://stackoverflow.com/questions/22387586/c-measuring-execution-time-of-a-function
+		high_resolution_clock::time_point endTime = high_resolution_clock::now();
+		int duration = duration_cast<microseconds>(endTime - startTime).count();
+
+		cout << "Generated board in " << attempts << " attempts over " << duration << " microseconds." << endl;
 	};
 
 	// Returns whether the given number is unique at the given position based on what 
@@ -111,7 +189,6 @@ public:
 			// grid[row][i]			grid[4][7]
 			// This event previously occured meaning an infinite loop testing a number's
 			// uniqueness against itself.
-
 
 			// Set value for true.
 			bool isCorrect = (grid[row][i] != num);
@@ -160,17 +237,40 @@ public:
 				continue;
 			}
 		}
+
 		return true;
 	}
-};
 
-			// @TODO: Fix the following: Currently randomness means that the checks will 
-			// fail as there is no set order. Therefore it will come to a point
-			// in which the only random number left in a row is already in the column.
+	void PrintPuzzle(int grid[ROWLENGTH][COLUMNLENGTH])
+	{
+		for (int i = 0; i < ROWLENGTH; i++)
+		{
+			for (int j = 0; j < COLUMNLENGTH; j++)
+			{
+				// Display the Sudoku grid with seperated values.
+				cout << grid[i][j] << "|";
+			}
+
+			// Create new grid line after 9 values.
+			cout << endl;
+		}
+	}
+	
+	// Emptys the grid of all values, returning them to 0.
+	void ClearGrid(int grid[ROWLENGTH][COLUMNLENGTH])
+	{
+		for (int r = 0; r < ROWLENGTH; r++)
+		{
+			for (int c = 0; c < COLUMNLENGTH; c++)
+			{
+				grid[r][c] = 0;
+			}
+		}
+	}
+
+}; // End of class.
+
 			// @TODO: Check the 3*3 box to ensure it contains only 1-9.
-
- 
-
 
 void main()
 {
@@ -178,20 +278,9 @@ void main()
 	int grid[ROWLENGTH][COLUMNLENGTH] = { 0 };
 	PuzzleGenerator generator;
 	// Use '.' to access fields and functions of the class.
-	// Populate the grid from the randomly generated numbers.
+	// Populate the grid from the randomly generated numbers, filling linearly along the rows.
 	generator.FillGrid(grid);
-
- 	for (int i = 0; i < ROWLENGTH; i++)
-	{
-		for (int j = 0; j < COLUMNLENGTH; j++)
-		{
-			// Display the Sudoku grid with seperated values.
-			cout << grid[i][j] << "|";
-		}
-       
-		// Create new grid line after 9 values.
-		cout << endl;
-	}
+	generator.PrintPuzzle(grid);
 
 	// Title the game. 
 	cout << " => SUDOKU - The Game of Your Life <= " << endl;
