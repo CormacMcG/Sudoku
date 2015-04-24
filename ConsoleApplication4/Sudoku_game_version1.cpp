@@ -6,11 +6,11 @@
 * to input their chosen values in order to solve the grid.
 *
 * @author Cormac McGarrigle <McGarrigle-C@email.ulster.ac.uk> B00585950
-* @license General Public License
+* @license General Public License, https://www.gnu.org/copyleft/gpl.html
 * @copyright Cormac McGarrigle 2015
 *
-* @TODO: Display a full completed Sudoku grid
-* @TODO: Knock holes within the grid to allow space for inputs.
+* @TODO: Implement the 3*3 grid test.
+* @TODO: Create holes within the grid to allow space for inputs.
 * @TODO: Allow user inputs
 * Github: https://github.com/CormacMcG/Sudoku
 *
@@ -69,6 +69,7 @@ public:
 		{
 			validBoard = true;
 			ClearGrid(grid);
+			// This check displays evertime a grid is scrapped and a new one is generated.
 			//cout << "========================= New grid =========================" << endl;
 			// Every time a new grid is required add one to attempts.
 			attempts++;
@@ -163,7 +164,7 @@ public:
 		}
 		
 		// Measures code execution time.
-		// Public domain, from https://stackoverflow.com/questions/22387586/c-measuring-execution-time-of-a-function
+		// The next line is public domain, from https://stackoverflow.com/questions/22387586/c-measuring-execution-time-of-a-function
 		high_resolution_clock::time_point endTime = high_resolution_clock::now();
 		int duration = duration_cast<microseconds>(endTime - startTime).count();
 
